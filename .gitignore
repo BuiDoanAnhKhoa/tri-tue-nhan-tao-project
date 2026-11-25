@@ -14,3 +14,8 @@ runs/traffic/*
 !runs/traffic/weights/
 !runs/traffic/weights/best.pt
 report_visdrone/intersection_tracks.csv
+
+# Local coursework proposals and team planning
+de_cuong_*
+*.tex
+MEMBER_A_AI_TRACKING_GUIDE.md
