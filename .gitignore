@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+outputs/
+data/*
+!data/sample_tracks.csv
+*.zip
+*.MOV
+*.mp4
+*.pdf
+*.pt
+runs/*
+!runs/traffic/
+runs/traffic/*
+!runs/traffic/weights/
+!runs/traffic/weights/best.pt
+report_visdrone/intersection_tracks.csv

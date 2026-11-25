@@ -1,0 +1,9 @@
+names:
+- bicycle
+- car
+- truck
+- bus
+- motor
+path: /home/khoa/Projects/cuoi-ki-ttnt-prj/data/traffic
+train: images/train
+val: images/val

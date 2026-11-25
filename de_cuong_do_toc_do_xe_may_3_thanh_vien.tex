@@ -1,0 +1,327 @@
+% Biên dịch: xelatex de_cuong_do_toc_do_xe_may_3_thanh_vien.tex
+\documentclass[11pt,a4paper]{article}
+
+% --- Trang & Font ---
+\usepackage[top=2.2cm,bottom=2.2cm,left=2.0cm,right=2.0cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+
+% --- Toán ---
+\usepackage{amsmath}
+
+% --- Bảng & Hình ---
+\usepackage{booktabs,array,tabularx,float}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+% --- Màu sắc ---
+\usepackage[table]{xcolor}
+\definecolor{primary}{HTML}{1A365D}
+\definecolor{secondary}{HTML}{2B6CB0}
+\definecolor{accentA}{HTML}{2B6CB0}
+\definecolor{accentB}{HTML}{2C7A7B}
+\definecolor{accentC}{HTML}{C05621}
+\definecolor{alertred}{HTML}{9B2C2C}
+\definecolor{darkgray}{HTML}{2D3748}
+\definecolor{lightbg}{HTML}{F7FAFC}
+
+% --- Hộp ---
+\usepackage[skins,breakable]{tcolorbox}
+\tcbset{
+    commonbox/.style={
+        enhanced, breakable, arc=3mm, boxrule=1pt,
+        fonttitle=\bfseries\sffamily,
+        left=8pt, right=8pt, top=7pt, bottom=7pt
+    }
+}
+
+\newtcolorbox{roleboxA}[1]{commonbox, colback=blue!3!white, colframe=accentA,
+    title={\Large\color{white} Thành viên A: #1}}
+\newtcolorbox{roleboxB}[1]{commonbox, colback=teal!3!white, colframe=accentB,
+    title={\Large\color{white} Thành viên B: #1}}
+\newtcolorbox{roleboxC}[1]{commonbox, colback=orange!4!white, colframe=accentC,
+    title={\Large\color{white} Thành viên C: #1}}
+
+% --- Danh sách ---
+\usepackage{enumitem}
+\setlist[itemize]{nosep,topsep=3pt,parsep=2pt,itemsep=2pt,leftmargin=1.5em}
+\setlist[enumerate]{nosep,topsep=3pt,parsep=2pt,itemsep=2pt,leftmargin=1.5em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5.5pt}
+
+% --- Tiêu đề ---
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries\sffamily\color{primary}}{\thesection.}{0.6em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries\sffamily\color{secondary}}{\thesubsection}{0.6em}{}
+
+% --- Header / Footer ---
+\usepackage{fancyhdr}
+\setlength{\headheight}{15pt}
+\addtolength{\topmargin}{-3pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\sffamily\color{gray} Đồ Án Cuối Kỳ --- Trí Tuệ Nhân Tạo}
+\fancyhead[R]{\small\sffamily\color{gray} Đo Vận Tốc Xe Từ Camera}
+\fancyfoot[C]{\small\sffamily\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% --- Liên kết ---
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=secondary, urlcolor=secondary}
+
+% =====================================================================
+\begin{document}
+
+% --- TIÊU ĐỀ ---
+\begin{center}
+    \vspace{0.3cm}
+    {\huge\bfseries\sffamily\color{primary} Đo Vận Tốc Xe Máy Từ Một Camera Cố Định}\\[8pt]
+    {\large\sffamily\color{darkgray} Đề cương triển khai --- Nhóm 3 thành viên}\\[4pt]
+    {\small\sffamily\color{gray} Phiên bản 2.0 --- Tháng 11/2026}
+    \vspace{0.4cm}
+\end{center}
+
+% =====================================================================
+\section{Mục tiêu}
+
+\begin{tcolorbox}[commonbox, colback=lightbg, colframe=primary]
+Xây dựng phần mềm nhận \textbf{video đầu vào} từ một camera cố định, \textbf{tự động phát hiện xe máy} (và ô tô, xe buýt\ldots), \textbf{theo dõi từng xe} qua các frame, rồi \textbf{ước lượng vận tốc} (km/h) của mỗi xe --- xuất ra video có chú thích và file CSV dữ liệu.
+\end{tcolorbox}
+
+% =====================================================================
+\section{Nguyên lý hoạt động (tóm tắt)}
+
+\subsection{Bài toán cốt lõi}
+Vận tốc = quãng đường / thời gian. Camera cho ta hình ảnh tính bằng \textbf{pixel}, không phải mét. Vậy phải chuyển pixel $\rightarrow$ mét để tính quãng đường thực.
+
+\subsection{Vì sao không nhân đơn giản pixel với một hệ số cố định?}
+Camera nhìn nghiêng xuống đường tạo ra \textbf{hiệu ứng phối cảnh}: vật ở gần thì to, vật ở xa thì nhỏ. Cùng 1 chiếc xe chạy 2 mét ngoài đời, ở gần camera nó dịch 100 pixel, nhưng ở xa chỉ dịch 20 pixel. Nếu dùng tỷ lệ cố định ($1 \text{ px} = x \text{ mét}$), vận tốc sẽ sai lệch \textbf{50--300\%} tùy vị trí xe trên ảnh.
+
+\subsection{Giải pháp: Homography}
+\textbf{Homography} là phép biến đổi hình học giúp ``duỗi phẳng'' hình ảnh đường phố bị méo phối cảnh thành bản đồ nhìn từ trên xuống (\textit{Bird's-Eye View}), trong đó tọa độ tính bằng \textbf{mét thực}. Cách làm:
+\begin{enumerate}
+    \item Chọn \textbf{4 điểm mốc} trên mặt đường mà ta biết khoảng cách thực (ví dụ: 4 góc vạch kẻ đường).
+    \item OpenCV tính ra một \textbf{ma trận H} (3$\times$3) từ 4 cặp tọa độ (pixel $\leftrightarrow$ mét).
+    \item Với bất kỳ điểm pixel nào trên đường, nhân với H là ra tọa độ mét.
+\end{enumerate}
+
+\textbf{Điểm đại diện cho xe:} Lấy \textit{điểm giữa cạnh đáy} (bottom-center) của bounding box --- đó là chỗ bánh xe chạm đường, nằm đúng trên mặt phẳng mà Homography hoạt động.
+
+\subsection{Tính vận tốc}
+Sau khi có tọa độ mét theo thời gian, ta tính:
+$$v_{\text{km/h}} = 3.6 \times \frac{\text{quãng đường (mét)}}{\text{thời gian (giây)}}$$
+
+Nhưng \textbf{không tính giữa 2 frame liền kề} (vì bounding box rung $\pm$2 pixel, gây nhiễu vận tốc rất lớn). Thay vào đó, dùng \textbf{cửa sổ trượt} 0.5--1 giây rồi lọc trung vị để vận tốc mượt mà.
+
+% =====================================================================
+\section{Pipeline toàn hệ thống}
+
+\begin{tcolorbox}[commonbox, colback=white, colframe=primary, width=0.98\textwidth]
+\centering\sffamily\small
+\textbf{Video MP4/MOV} $\;\xrightarrow{\text{Đọc frame + timestamp}}\;$
+\textbf{Frame ảnh}\\[4pt]
+$\downarrow$\\[2pt]
+\textbf{YOLO11n} phát hiện xe $\;\rightarrow\;$
+\textbf{ByteTrack} gán ID theo dõi xuyên frame\\[4pt]
+$\downarrow$\\[2pt]
+Lấy \textbf{bottom-center} $\;\xrightarrow{\text{Homography H}}\;$
+\textbf{Tọa độ mét thực}\\[4pt]
+$\downarrow$\\[2pt]
+\textbf{Cửa sổ trượt + Lọc trung vị} $\;\rightarrow\;$
+\textbf{Vận tốc km/h}\\[4pt]
+$\downarrow$\\[2pt]
+\textbf{Vẽ kết quả lên video + Ghi CSV}
+\end{tcolorbox}
+
+\vspace{0.1cm}
+
+\textbf{Giải thích từng bước:}
+\begin{enumerate}
+    \item \textbf{Đọc video:} Mở file video, lấy từng frame kèm \textit{timestamp thật} (PTS) của video --- \textbf{không dùng thời gian inference} (nếu GPU chậm thì thời gian inference khác xa thời gian thực, tính vận tốc sẽ sai).
+    \item \textbf{YOLO11n:} Mô hình AI siêu nhẹ ($<$6 MB), chạy nhanh ($>$60 FPS trên GPU). Phát hiện xe máy, ô tô, xe buýt, xe tải trên mỗi frame. Mỗi xe được khoanh bằng bounding box.
+    \item \textbf{ByteTrack:} Gán cho mỗi xe một \textbf{ID duy nhất} và theo dõi xuyên suốt các frame. YOLO chỉ xử lý từng frame riêng lẻ nên không biết ``xe này ở frame trước là xe nào'' --- ByteTrack giải quyết vấn đề đó. Nó giữ ID ổn định ngay cả khi xe bị che khuất tạm thời.
+    \item \textbf{Homography:} Chuyển tọa độ pixel (bottom-center) $\rightarrow$ mét thực trên mặt đường.
+    \item \textbf{Tính vận tốc:} Dùng cửa sổ trượt 0.5--1 giây + lọc trung vị (Moving Median) để ra vận tốc km/h ổn định, không giật.
+    \item \textbf{Xuất kết quả:} Video có bounding box + ID + km/h hiển thị trực tiếp. File CSV ghi lại toàn bộ dữ liệu để phân tích.
+\end{enumerate}
+
+% =====================================================================
+\section{Phân công 3 thành viên}
+
+Mỗi người sở hữu \textbf{module riêng}, code trên \textbf{file riêng}, giao tiếp qua \textbf{định dạng dữ liệu đã thống nhất}. Nhờ vậy 3 người làm song song mà không chờ nhau.
+
+\vspace{0.2cm}
+
+% --- A ---
+\begin{roleboxA}{AI --- Phát hiện và Theo dõi xe}
+\textbf{Nhiệm vụ:}
+\begin{itemize}
+    \item Viết module \textbf{đọc video} + trích timestamp (PTS) --- file \texttt{src/camera\_io.py}
+    \item Tích hợp \textbf{YOLO11n} phát hiện xe + \textbf{ByteTrack} gán ID --- file \texttt{src/detector\_tracker.py}
+    \item Tinh chỉnh ngưỡng confidence ($\ge 0.35$), xử lý xe bị che khuất
+    \item Đo benchmark: FPS inference trên GPU và CPU
+    \item \textbf{Tuần 1:} Tạo file \texttt{sample\_tracks.csv} (20 dòng mẫu) để B và C có dữ liệu code ngay
+\end{itemize}
+
+\textbf{Dữ liệu đầu ra cho B:}\\
+\small\texttt{frame\_id, timestamp\_s, track\_id, class, x1, y1, x2, y2, confidence}
+
+\textbf{Xong khi:} Video chạy, mỗi xe có 1 bounding box + 1 ID ổn định không nhảy lung tung.
+\end{roleboxA}
+
+\vspace{0.3cm}
+
+% --- B ---
+\begin{roleboxB}{Hình học --- Hiệu chuẩn và Tính vận tốc}
+\textbf{Nhiệm vụ:}
+\begin{itemize}
+    \item Viết \textbf{tool hiệu chuẩn}: click chọn 4 điểm mốc trên ảnh, nhập khoảng cách thực, tính ma trận H, lưu file \texttt{configs/calibration.json} --- file \texttt{src/calibration.py}
+    \item Viết module \textbf{tính vận tốc}: nhận tọa độ bounding box từ A $\rightarrow$ chiếu qua H ra mét $\rightarrow$ tính km/h bằng cửa sổ trượt + lọc trung vị --- file \texttt{src/speed\_estimator.py}
+    \item Lọc ngoại lai: $<$3 km/h $\rightarrow$ coi là dừng; $>$120 km/h $\rightarrow$ đánh dấu không hợp lệ
+    \item Viết \textbf{unit test} kiểm tra toán (ví dụ: xe đi 10m trong 0.5s phải ra 72 km/h) --- file \texttt{tests/test\_geometry.py}
+\end{itemize}
+
+\textbf{Dữ liệu đầu ra cho C:}\\
+\small\texttt{track\_id, X\_m, Y\_m, speed\_kmh, is\_valid}
+
+\textbf{Xong khi:} Unit test pass 100\%; vận tốc hiển thị mượt, không giật cục.
+\end{roleboxB}
+
+\vspace{0.3cm}
+
+% --- C ---
+\begin{roleboxC}{Tích hợp --- Hệ thống, Ground Truth và Đánh giá}
+\textbf{Nhiệm vụ:}
+\begin{itemize}
+    \item Viết \textbf{app chính} nối A + B thành hệ thống hoàn chỉnh --- file \texttt{src/app.py}
+    \item Viết module \textbf{hiển thị}: vẽ bbox, ID, badge km/h, vệt di chuyển --- file \texttt{src/visualizer.py}
+    \item \textbf{Thu thập Ground Truth}: đo đoạn đường 20m trên thực tế, cho xe chạy qua, đếm frame để tính vận tốc thật
+    \item Viết \textbf{script đánh giá}: so vận tốc dự đoán vs.\ Ground Truth, tính MAE và RMSE --- file \texttt{src/evaluate.py}
+    \item Quản lý Git repo, viết báo cáo và slide thuyết trình
+\end{itemize}
+
+\textbf{Xong khi:} Chạy \texttt{python src/app.py} là ra video demo + file CSV; có bảng MAE/RMSE chứng minh kết quả.
+\end{roleboxC}
+
+% =====================================================================
+\section{Quy trình phối hợp}
+
+\begin{itemize}
+    \item \textbf{Ngày đầu:} A tạo file CSV mẫu 20 dòng $\rightarrow$ B và C dùng ngay để code module của mình, không cần chờ YOLO chạy xong.
+    \item \textbf{Git:} 3 nhánh riêng: \texttt{feature/ai-A}, \texttt{feature/speed-B}, \texttt{feature/system-C}. Không commit thẳng vào \texttt{main}.
+    \item \textbf{Viết báo cáo:}
+    \begin{itemize}
+        \item A: chương về YOLO, ByteTrack, benchmark FPS
+        \item B: chương về Homography, hiệu chuẩn, kỹ thuật làm mượt
+        \item C: chương thí nghiệm, kết quả MAE/RMSE, kết luận
+    \end{itemize}
+\end{itemize}
+
+% =====================================================================
+\section{Thí nghiệm đánh giá}
+
+\subsection{3 phương án so sánh (Ablation)}
+\begin{enumerate}
+    \item \textbf{Baseline:} Nhân pixel với hệ số cố định (không Homography) --- để chứng minh cách đơn giản bị sai nhiều.
+    \item \textbf{Homography thô:} Dùng Homography nhưng tính vận tốc frame-by-frame (chưa làm mượt) --- để thấy vận tốc giật cục.
+    \item \textbf{Phương án đề xuất:} Homography + cửa sổ trượt + lọc trung vị --- kết quả tốt nhất.
+\end{enumerate}
+
+\subsection{Cách lấy Ground Truth (không cần thiết bị đắt tiền)}
+\begin{enumerate}
+    \item Đánh 2 vạch trên đường cách nhau đúng \textbf{20 mét} (đo bằng thước dây).
+    \item Cho xe chạy qua, camera quay lại.
+    \item Xem video, đếm số frame từ lúc xe chạm vạch 1 đến vạch 2 $\rightarrow$ tính $\Delta t$ $\rightarrow$ tính $v_{GT}$.
+    \item So $v_{GT}$ với vận tốc hệ thống ước lượng $\rightarrow$ tính MAE, RMSE.
+\end{enumerate}
+
+\subsection{Chỉ số đo lường}
+\begin{itemize}
+    \item \textbf{MAE} (Mean Absolute Error): sai số tuyệt đối trung bình --- càng nhỏ càng tốt.
+    \item \textbf{RMSE} (Root Mean Squared Error): phạt nặng sai số lớn --- càng nhỏ càng tốt.
+    \item \textbf{FPS}: tốc độ xử lý --- cần đủ nhanh cho ứng dụng thực tế.
+\end{itemize}
+
+% =====================================================================
+\section{Lộ trình 4 tuần}
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}c Y Y Y@{}}
+\toprule
+\textbf{Tuần} & \textbf{A (AI/Tracking)} & \textbf{B (Hình học/Tốc độ)} & \textbf{C (Tích hợp/Đánh giá)}\\
+\midrule
+\textbf{1} & Setup; chạy thử YOLO11n; tạo CSV mẫu 20 dòng & Viết tool chọn 4 điểm mốc; viết unit test giả lập & Thu thập video; dựng repo Git; thống nhất format dữ liệu\\
+\midrule
+\textbf{2} & Tích hợp ByteTrack; ổn định ID; đo FPS & Hoàn thiện tính H; lưu \texttt{calibration.json} & Ghép A + B thành prototype; xuất video demo đầu tiên\\
+\midrule
+\textbf{3} & Tinh chỉnh ngưỡng; xử lý xe bị che & Làm mượt vận tốc (Median Filter); lọc outlier & Đo Ground Truth 20m; chạy thí nghiệm E1/E2\\
+\midrule
+\textbf{4} & Benchmark GPU/CPU; vẽ biểu đồ FPS & Phân tích sai số theo khoảng cách & Tính MAE/RMSE; video demo cuối; đóng gói báo cáo + slide\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =====================================================================
+\section{5 cạm bẫy cần tránh}
+
+\begin{enumerate}
+    \item \textbf{Vận tốc giật lung tung:} Do tính frame-by-frame, bbox rung $\pm$2 pixel gây nhiễu lớn.\\
+    \textit{Khắc phục:} Dùng cửa sổ trượt $\ge$0.5 giây + lọc trung vị.
+
+    \item \textbf{Tráo đổi ID khi xe đi sát nhau:} ByteTrack ghép nhầm track.\\
+    \textit{Khắc phục:} Nếu xe nhảy $>$5m trong 1 frame hoặc vận tốc $>$120 km/h, reset track đó.
+
+    \item \textbf{Homography bị méo:} 4 điểm mốc quá gần hoặc gần thẳng hàng.\\
+    \textit{Khắc phục:} Chọn 4 điểm bao phủ diện tích rộng; kiểm tra \texttt{np.linalg.cond(H)} $<$ $10^5$.
+
+    \item \textbf{Dùng sai thời gian:} Lấy thời gian inference thay vì thời gian video thật.\\
+    \textit{Khắc phục:} Luôn dùng \texttt{cap.get(cv2.CAP\_PROP\_POS\_MSEC) / 1000.0}.
+
+    \item \textbf{An toàn giao thông:} Không đứng giữa đường quay video.\\
+    \textit{Khắc phục:} Đặt camera cố định trên ban công, cầu vượt, hoặc tripod sát lề.
+\end{enumerate}
+
+% =====================================================================
+\section{Cấu trúc thư mục}
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+\textbf{File} & \textbf{Người} & \textbf{Chức năng}\\
+\midrule
+\texttt{src/camera\_io.py} & A & Đọc video, trích timestamp\\
+\texttt{src/detector\_tracker.py} & A & YOLO11n + ByteTrack\\
+\texttt{src/calibration.py} & B & Click chọn 4 điểm mốc, tính H\\
+\texttt{src/speed\_estimator.py} & B & Chiếu tọa độ mét, tính km/h, làm mượt\\
+\texttt{src/app.py} & C & Chương trình chính kết nối toàn bộ\\
+\texttt{src/visualizer.py} & C & Vẽ bbox, ID, badge km/h lên video\\
+\texttt{src/evaluate.py} & C & So sánh với Ground Truth, tính MAE/RMSE\\
+\texttt{tests/test\_geometry.py} & B & Unit test kiểm tra toán\\
+\texttt{configs/calibration.json} & B & Ma trận H và tọa độ 4 điểm mốc\\
+\texttt{configs/config.yaml} & Nhóm & Cấu hình model, ngưỡng conf, cửa sổ $\tau$\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =====================================================================
+\section{Sản phẩm cuối cùng cần có}
+
+\begin{enumerate}
+    \item Chạy được: \texttt{python src/app.py --video data/IMG\_9471.MOV}
+    \item Video đầu ra có bounding box, ID xe, nhãn km/h
+    \item File CSV ghi lại dữ liệu tất cả xe
+    \item Bảng MAE / RMSE / FPS chứng minh Homography + làm mượt tốt hơn Baseline
+    \item Báo cáo + slide thuyết trình
+\end{enumerate}
+
+\vspace{0.5cm}
+\begin{center}
+    \rule{0.5\textwidth}{0.5pt}\\[4pt]
+    {\sffamily\small\color{darkgray} Chúc cả nhóm hợp tác hiệu quả!}
+\end{center}
+
+\end{document}

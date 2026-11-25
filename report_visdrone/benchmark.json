@@ -1,0 +1,24 @@
+[
+  {
+    "device": "0",
+    "frames": 275,
+    "measured_frames": 265,
+    "tracking_fps": 76.09290096375804,
+    "median_ms": 13.06155500060413,
+    "p95_ms": 15.315051208017392,
+    "wall_seconds": 9.134264162988984,
+    "wall_fps": 30.106420735484004,
+    "includes_output": true
+  },
+  {
+    "device": "cpu",
+    "frames": 275,
+    "measured_frames": 265,
+    "tracking_fps": 18.72988804866987,
+    "median_ms": 45.450101999449544,
+    "p95_ms": 87.77409859176245,
+    "wall_seconds": 15.482031530002132,
+    "wall_fps": 17.76252680193076,
+    "includes_output": false
+  }
+]

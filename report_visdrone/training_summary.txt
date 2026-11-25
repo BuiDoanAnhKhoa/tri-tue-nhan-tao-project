@@ -1,0 +1,13 @@
+Member A — Vehicle detection and tracking
+
+The experiment fine-tuned COCO-pretrained Ultralytics YOLO11n on the official VisDrone2019-DET train split (6,471 images). Validation used 548 images and 21,238 retained vehicle boxes. The traffic labels were bicycle, car, truck, bus, and motor. No test split contributed to checkpoint selection.
+
+Training used a GTX 1650 SUPER (4 GB), image size 640, batch size 4, two data loader workers, seed 0, optimizer=auto (MuSGD, initial learning rate 0.01), AMP enabled in the configuration, patience 30 and a 250-epoch ceiling. Training resumed from epoch 2 after an interruption. The scheduled evening cutoff ended training at epoch 128. args.yaml therefore records the resume checkpoint as the model. Epoch 128 had the highest logged validation mAP50–95. The post-training validation of best.pt is reported in best_validation.csv.
+
+results.csv contains the numeric values for each completed epoch. training_validation_losses.png and validation_metrics_by_epoch.png plot the raw series. BoxPR_curve.png shows validation precision versus recall as the detection threshold changes. BoxP_curve.png and BoxR_curve.png show precision and recall versus confidence. The normalized confusion matrix shows which classes the detector confuses.
+
+Benchmark input: VisDrone2019-MOT validation sequence uav0000339_00001_v, frames 1 through 275. Ordered source JPEGs from https://huggingface.co/datasets/Voxel51/visdrone-mot were encoded to MPEG-4 at a chosen presentation rate of 25 FPS. The annotated output uses the same presentation rate. Source recording frame rate was not verified.
+
+Benchmark settings: lane-det environment, batch 1, image size 640, FP32, conf=0.1, Ultralytics default bytetrack.yaml with persistent state. Each device ran the complete sequence. Tracking FPS counts model.track, including model preprocessing, detection, postprocessing and tracking; timing excludes video decoding, drawing, CSV writing and encoding. The first 10 tracking frames were excluded and GPU calls were synchronized. GPU wall FPS includes all frames, input decoding, drawing, video encoding and track CSV export. CPU wall FPS includes input decoding and tracking only. Frame numbers in intersection_tracks.csv start at 1 to match the source labels.
+
+GPU tracking 76.1 FPS; GPU complete annotated export 30.1 FPS. CPU tracking 18.7 FPS (AMD Ryzen 3 3100). One timed pass per device. The GPU export contains 4,607 frame-level track observations. Simple motorcycle frame recall on this sequence was 205 / 642 = 31.9%, using one-to-one predicted/annotated motorcycle matches at IoU >= 0.5. This check uses all labeled motorcycles and does not evaluate identity continuity.
