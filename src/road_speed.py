@@ -86,6 +86,10 @@ def run(video, tracks, calibration, outdir):
                         cv2.putText(frame,label,(int(x1),max(16,int(y1)-3)),cv2.FONT_HERSHEY_SIMPLEX,.5,(40,220,50),1)
                     pending = next(groups, None)
                 cv2.polylines(frame,[roi.astype(int)],True,(0,175,255),2)
+                if config.get("scale_status") == "illustrative":
+                    cv2.rectangle(frame, (0, 0), (820, 48), (24, 24, 24), -1)
+                    cv2.putText(frame, "DEMO | Assumed road dimensions | Speeds are illustrative",
+                                (12, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
                 writer.write(frame)
             if pending:
                 raise ValueError("Track rows exceed the source clip")
